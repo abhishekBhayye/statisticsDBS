@@ -14,19 +14,19 @@ body <- dashboardBody(
                          "BINOMIAL" = "bino"
                        )
            ),
-           
+
            sliderInput("n","parameter n in Binomial", min = 1, max = 1000, value = 10),
-           
+
            conditionalPanel(
              "input.models == 'bino'",
-             numericInput("p","parameter p in Binomial", min = 0, max = 1, value = "0.5")
+             numericInput("p","param p in Binomial", min = 0, max = 1, value = "0.5")
            )
     ),
-    
+
     column(width = 8,
            plotOutput("histogram")
     )
-  )   
+  )
 )
 
 dashboardPage(
