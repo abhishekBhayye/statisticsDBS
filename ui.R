@@ -3,7 +3,6 @@ library(shinydashboard)
 library(markdown)
 library(datasets)
 
-dataForApp <- NULL
 dashboardPage(
   
   dashboardHeader(title = "Basic dashboard"),
@@ -68,7 +67,19 @@ dashboardPage(
       
       # Second tab content
       tabItem(tabName = "overview",
-        dataTableOutput("value")
+        h5("You will see all the information regarding the dataset here."),
+        br(),
+        fluidRow(
+          
+          valueBoxOutput("progressBox"),
+
+          infoBoxOutput("progressBox2")
+        ),
+        fluidRow(
+          column(
+            dataTableOutput("value"), width = 12)
+        )
+        
       ),
       
       # Third tab content
@@ -85,7 +96,8 @@ dashboardPage(
       
       # Fifth tab content
       tabItem(tabName = "glm",
-        "5"
+        "5",
+        source("hypothesis.R")
       )
     )
   )
