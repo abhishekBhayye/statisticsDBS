@@ -8,6 +8,10 @@ server <- function(input, output,session) {
   values = reactiveValues()
   #This function is repsonsible for loading in the selected file
   filedata <- reactive({
+    #validating independent variables if not selected
+    validate(
+      need(input$datafile != "", "Please select a data set")
+    )
     infile <- input$datafile
     if (is.null(infile)) {
       # User has not uploaded a file yet
@@ -17,87 +21,162 @@ server <- function(input, output,session) {
   })
   
   
+  #columns : independent columns
+  #columns2 : dependent column
   
   observe({
+    
     updateSelectInput(session,"columns",choices=colnames(filedata()))
     updateSelectInput(session,"columns2",choices=colnames(filedata()))
   })
   
-  #GLM logic
-  #x1 <- data$gre     
-  #x2 <- data$gpa 
-  #x3 <- data$rank 
-  #y  <- data$admit 
-  output$glmperf <- renderPlot({
-    df <-na.omit(filedata())
-    tarinddata <- cbind(df[,input$columns2],df[,input$columns])
-    colnames(tarinddata) = c(input$columns2,input$columns)
-    colnames(tarinddata)[1] <- "Y"
-    set.seed(199) 
+  
+  
+  
+  output$plot <- renderPlot({
+    if(input$Distribution=='Continuous')
+    {
+      
+      df <-na.omit(filedata())
+      tarinddata <- cbind(df[,input$columns2],df[,input$columns])
+      colnames(tarinddata) = c(input$columns2,input$columns)
+      colnames(tarinddata)[1] <- "Y"
+      set.seed(199) 
+      
+      #fit.glm <- glm(y ~.,dataset, family="binomial") # ~. shows that we include all ind. variables 
+      
+      #summary(fit.glm)  
+      
+      n = nrow(tarinddata)  
+      
+      indexes = sample(n,n*(80/100))  
+      
+      trainset = data.frame(tarinddata[indexes,] ) 
+      
+      testset = data.frame(tarinddata[-indexes,] )
+      
+      # Fit the full model  
+      
+      actual=testset$Y
+      pred_test <- data.frame(testset)
+      
+      full.model <- glm(Y ~.,data=trainset, family='gaussian')
+      
+      #another.model <- glm(Y ~.,data=anotherdata, family='gaussian')
+      
+      
+      values$summ <- data.frame("significant among selected"=summary(full.model)$coeff[-1,4] < 0.05)
+      
+      
+      values$full <- full.model
+      
+      pred_full <- predict(full.model,testset[,input$columns])
+      
+      rmse_full = sqrt(sum((pred_full -actual)^2)/nrow(testset))
+      
+      
+      
+      
+      reduced.model =stepAIC(full.model) 
+      values$full = full.model
+      values$reduced <- reduced.model
+      pred_red = predict(reduced.model,testset[,input$columns])
+      
+      rmse_red = sqrt(sum((pred_red -actual)^2)/nrow(testset))
+      
+      values$rmse <- data.frame('Full model RMSE'=rmse_full,'Reduced model RMSE'=rmse_red)
+      values$Predictions <- data.frame('Full'=pred_full,'Reduced'=pred_red,'actual'=actual)
+      
+      par(mfrow=c(1,2))
+      plot(actual,type='o',col='black',xlab = 'observations',ylab=input$columns2,main='FULL')
+      
+      lines(pred_full,type='o',col='orange')
+      
+      legend(
+        "topleft",
+        lty=c(1,1),
+        col=c("black","orange"),
+        legend=c("Real","Predicted")
+      )
+      
+      plot(actual,type='o',col='black',xlab = 'observations',ylab=input$columns2,main='Reduced')
+      
+      lines(pred_red,type='o',col='orange')
+      
+      legend(
+        "topleft",
+        lty=c(1,1),
+        col=c("black","orange"),
+        legend=c("Real","Predicted")
+      )
+      
+    }
     
-    #fit.glm <- glm(y ~.,dataset, family="binomial") # ~. shows that we include all ind. variables 
-    
-    #summary(fit.glm)  
-    
-    n = nrow(tarinddata)  
-    
-    indexes = sample(n,n*(80/100))  
-    
-    trainset = data.frame(tarinddata[indexes,] ) 
-    
-    testset = data.frame(tarinddata[-indexes,] )
-    
-    # Fit the full model  
-    
-    actual=testset$Y
-    pred_test <- data.frame(testset)
-    
-    full.model <- glm(Y ~.,data=trainset, family="gaussian")
-    
-    values$full <- full.model
-    
-    pred_full <- predict(full.model,testset[,input$columns])
-    
-    rmse_full = sqrt(sum((pred_full -actual)^2)/nrow(testset))
-    
-    
-    
-    
-    reduced.model =stepAIC(full.model) 
-    values$full = full.model
-    values$reduced <- reduced.model
-    pred_red = predict(reduced.model,testset[,input$columns])
-    rmse_red = sqrt(sum((pred_red -actual)^2)/nrow(testset))
-    
-    values$rmse <- data.frame('Full'=rmse_full,'Reduced'=rmse_red)
-    
-    par(mfrow=c(1,2))
-    plot(actual,type='o',col='red',xlab = 'observations',ylab=input$columns2,main='FULL')
-    
-    lines(pred_full,type='o',col='blue')
-    
-    legend(
-      "topleft",
-      lty=c(1,1),
-      col=c("red","blue"),
-      legend=c("Real","Predicted")
-    )
-    
-    plot(actual,type='o',col='red',xlab = 'observations',ylab=input$columns2,main='Reduced')
-    
-    lines(pred_red,type='o',col='blue')
-    
-    legend(
-      "topleft",
-      lty=c(1,1),
-      col=c("red","blue"),
-      legend=c("Real","Predicted")
-    )
-    
-    
+    else
+    {
+      df <-na.omit(filedata())
+      tarinddata <- cbind(df[,input$columns2],df[,input$columns])
+      colnames(tarinddata) = c(input$columns2,input$columns)
+      colnames(tarinddata)[1] <- "Y"
+      mc = 1000
+      acc=0
+      
+      for(i in 1:mc){
+        
+        n = nrow(tarinddata)  
+        
+        indexes = sample(n,n*(80/100))  
+        
+        trainset = data.frame(tarinddata[indexes,] ) 
+        
+        testset = data.frame(tarinddata[-indexes,] )
+        
+        # Fit the full model  
+        
+        
+        pred_test <- data.frame(testset)
+        
+        model1<-glm(Y ~.,data=trainset, family='binomial')
+        
+        values$summ <- data.frame("significant among selected"=summary(model1)$coeff[-1,4] < 0.05)
+        
+        predy=predict(model1,testset)
+        pred_hat=ifelse(predy>=0.5,1,0)
+        actual=testset$Y
+        #Confusion Matrix
+        confusion_matrix=table(pred_hat,actual)
+        confusion_matrix
+        #Accuracy
+        acc <- acc +sum(confusion_matrix[row(confusion_matrix)==col(confusion_matrix)])/sum(confusion_matrix)
+        #acc <- acc +sum([row(df)==col(df)])/sum(df)
+        
+      }
+      accuracy2 = acc/mc
+      values$binom <- data.frame('Accuracy'=accuracy2)
+      values$binompredictions <- data.frame('Prediction'=pred_hat,'actual'=actual)
+      
+      par(mfrow=c(1,2))
+      plot(actual,type='o',col='black',xlab = 'observations',ylab=input$columns2)
+      
+      lines(pred_hat,type='o',col='orange')
+      
+      legend(
+        "topleft",
+        lty=c(1,1),
+        col=c("black","orange"),
+        legend=c("Real","Predicted")
+      )  
+      
+      
+      
+    }
     
   })
   
+  
+  
+  
+  #Function for displaying selected data
   
   output$selData <- DT::renderDataTable({
     df <- filedata()
@@ -107,44 +186,51 @@ server <- function(input, output,session) {
     DT::datatable(tarinddata,options = list(lengthChange = TRUE))
   })
   
-  output$RMSE <- DT::renderDataTable({
-    DT::datatable(values$rmse,options=list(lengthChange=TRUE))
-    
-  })
   
+  #Function for displaying the RMSE value 
   
-  
-  
-  
-  forecast_out <- reactive({
-    Var_Count <- length(input$columns)
-    new_data <- as.numeric(paste(lapply(1:Var_Count,function(i){
-      inputName <- paste0(input$columns[i])
-      input[[inputName]]
-    })))
-    input_data <- data.frame(t(new_data))
-    
-    for (i in 1:Var_Count)
+  output$Measures <- DT::renderDataTable({
+    if(input$Distribution=='Continuous')
     {
-      colnames(input_data)[i] <- input$columns[i]
+      DT::datatable(values$rmse,options=list(lengthChange=TRUE))
+      
+    }
+    else
+    {
+      DT::datatable(values$binom,options=list(lengthChange=TRUE))  
+      
     }
     
-    new_predict_full <- predict(values$full,input_data)
-    new_predict_red <- predict(values$reduced,input_data)
-    
-    
-    pred_data_new <- data.frame(new_predict_full,new_predict_red)
-    
-    colnames(pred_data_new)[1] <- paste('Full Mode -',input$columns2)
-    colnames(pred_data_new)[2] <- paste('Reduced Mode -',input$columns2)
-    
-    return(pred_data_new)
+  })
+  
+  
+  #Function for displaying Predictions 
+  
+  output$Predictions <- DT::renderDataTable({
+    if(input$Distribution=='Continuous')
+    {
+      
+      DT::datatable(values$Predictions,options=list(lengthChange=TRUE))
+      
+    }
+    else
+    {
+      
+      DT::datatable(values$binompredictions,options=list(lengthChange=TRUE))
+      
+    }
+  })
+  
+  
+  #Function for displaying Significant selected columns
+  
+  output$Summary <- DT::renderDataTable({
+    DT::datatable(values$summ,options=list(lengthChange=TRUE))
     
   })
   
-  output$Prediction <- DT::renderDataTable({
-    DT::datatable(forecast_out(),options=list(lengthChange = TRUE))
-  })
+  
+  
 }
 
 
@@ -161,14 +247,18 @@ ui <- pageWithSidebar(
     #uiOutput("Independent"),
     #uiOutput("Dependent"),
     selectInput("columns",label="Please select independent variables",multiple=TRUE,choices =""),
-    selectInput("columns2",label="Please select dependent variable",choices ="")
+    selectInput("columns2",label="Please select dependent variable",choices =""),
+    selectInput("Distribution","Please select distribution type",
+                choices = c("Discrete","Continuous"))
+    
   ),
   mainPanel(
     tabsetPanel(type = 'tab',
-                tabPanel("Selected",DT::dataTableOutput("selData")),
-                tabPanel("Test/Predicted",plotOutput("glmperf")),
-                tabPanel("RMSE",DT::dataTableOutput("RMSE")),
-                tabPanel("Prediction",DT::dataTableOutput("Prediction")))
+                tabPanel("Selected cols",DT::dataTableOutput("selData")),
+                tabPanel("Actual vs Predicted",plotOutput("plot")),
+                tabPanel("Summary",DT::dataTableOutput("Summary")),
+                tabPanel("Measures",DT::dataTableOutput("Measures")),
+                tabPanel("Prediction",DT::dataTableOutput("Predictions")))
   )
 )
 
