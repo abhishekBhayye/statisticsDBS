@@ -170,11 +170,13 @@ function(input, output, session){
   
   RMSE <- 0
   values = reactiveValues()
+  #This function is repsonsible for loading in the selected file
   
   #columns : independent columns
   #columns2 : dependent column
   
   observe({
+    
     updateSelectInput(session,"columns",choices=colnames(myData()))
     updateSelectInput(session,"columns2",choices=colnames(myData()))
   })
@@ -189,11 +191,7 @@ function(input, output, session){
       colnames(tarinddata)[1] <- "Y"
       set.seed(199) 
       
-      #fit.glm <- glm(y ~.,dataset, family="binomial") # ~. shows that we include all ind. variables 
-      
-      #summary(fit.glm)  
-      
-      n = nrow(tarinddata)  
+      n = nrow(tarinddata) 
       
       indexes = sample(n,n*(80/100))  
       
@@ -204,14 +202,13 @@ function(input, output, session){
       # Fit the full model  
       
       actual=testset$Y
+      
       pred_test <- data.frame(testset)
       
       full.model <- glm(Y ~.,data=trainset, family='gaussian')
       
-      #another.model <- glm(Y ~.,data=anotherdata, family='gaussian')
       
-      
-      values$summ <- data.frame("significant among selected"=summary(full.model)$coeff[-1,4] < 0.05)
+      values$summ <- data.frame("significant columns among selected"=summary(full.model)$coeff[-1,4] < 0.05)
       
       
       values$full <- full.model
@@ -222,7 +219,7 @@ function(input, output, session){
       
       
       
-      
+      #Calculations for reduced model
       reduced.model =stepAIC(full.model) 
       values$full = full.model
       values$reduced <- reduced.model
@@ -231,9 +228,12 @@ function(input, output, session){
       rmse_red = sqrt(sum((pred_red -actual)^2)/nrow(testset))
       
       values$rmse <- data.frame('Full model RMSE'=rmse_full,'Reduced model RMSE'=rmse_red)
-      values$Predictions <- data.frame('Full'=pred_full,'Reduced'=pred_red,'actual'=actual)
+      values$Predictions <- data.frame('Full'=pred_full,'Reduced'=pred_red)
       
       par(mfrow=c(1,2))
+      
+      #plot for full model
+      
       plot(actual,type='o',col='black',xlab = 'observations',ylab=input$columns2,main='FULL')
       
       lines(pred_full,type='o',col='orange')
@@ -244,6 +244,8 @@ function(input, output, session){
         col=c("black","orange"),
         legend=c("Real","Predicted")
       )
+      
+      #Plot for reduced model
       
       plot(actual,type='o',col='black',xlab = 'observations',ylab=input$columns2,main='Reduced')
       
@@ -260,6 +262,8 @@ function(input, output, session){
     
     else
     {
+      #Calculations and plot for Discrete target column
+      #Note: Only full model approach used
       df <-na.omit(myData())
       tarinddata <- cbind(df[,input$columns2],df[,input$columns])
       colnames(tarinddata) = c(input$columns2,input$columns)
@@ -284,7 +288,7 @@ function(input, output, session){
         
         model1<-glm(Y ~.,data=trainset, family='binomial')
         
-        values$summ <- data.frame("significant among selected"=summary(model1)$coeff[-1,4] < 0.05)
+        values$summ <- data.frame("significant columns among selected"=summary(model1)$coeff[-1,4] < 0.05)
         
         predy=predict(model1,testset)
         pred_hat=ifelse(predy>=0.5,1,0)
@@ -294,12 +298,11 @@ function(input, output, session){
         confusion_matrix
         #Accuracy
         acc <- acc +sum(confusion_matrix[row(confusion_matrix)==col(confusion_matrix)])/sum(confusion_matrix)
-        #acc <- acc +sum([row(df)==col(df)])/sum(df)
         
       }
       accuracy2 = acc/mc
       values$binom <- data.frame('Accuracy'=accuracy2)
-      values$binompredictions <- data.frame('Prediction'=pred_hat,'actual'=actual)
+      values$binompredictions <- data.frame('Prediction'=pred_hat)
       
       par(mfrow=c(1,2))
       plot(actual,type='o',col='black',xlab = 'observations',ylab=input$columns2)
@@ -312,11 +315,17 @@ function(input, output, session){
         col=c("black","orange"),
         legend=c("Real","Predicted")
       )  
+      
+      
+      
     }
     
   })
   
-  #Function for displaying selected data
+  
+  
+  
+  #Function for displaying selected column data
   
   output$selData <- DT::renderDataTable({
     df <- myData()
@@ -327,7 +336,9 @@ function(input, output, session){
   })
   
   
-  #Function for displaying the RMSE value 
+  #Function for displaying the measure of Performances
+  #For continuous: RMSE
+  #For Discrete: Accuracy
   
   output$Measures <- DT::renderDataTable({
     if(input$Distribution=='Continuous')
