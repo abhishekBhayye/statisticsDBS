@@ -1,7 +1,7 @@
 library(shiny) 
 
-ui <- fluidPage( 
-  #headerPanel("Discrete Random Variables"),  
+ui <- fluidPage(
+  h5("Please choose the model and  to get output graphs"),
   sidebarPanel( 
     selectInput("dismodel", "Select Model", 
                 choices = c(
