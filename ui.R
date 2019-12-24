@@ -84,20 +84,20 @@ dashboardPage(
       
       # Third tab content
       tabItem(tabName = "model",
-        "3",
+        h3("Discrete Probability Models"),
         source("model.R")
       ),
       
       # Fourth tab content
       tabItem(tabName = "hypothesis",
-        "4",
+        h3("Overview of Hypothesis using T-test"),
         source("hypothesis.R")
       ),
       
       # Fifth tab content
       tabItem(tabName = "glm",
-        "5",
-        source("hypothesis.R")
+        h3("Prediction using GLM"),
+        source("glm.R")
       )
     )
   )
