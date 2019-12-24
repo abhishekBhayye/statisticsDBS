@@ -1,259 +1,129 @@
 library(shiny) 
 
 ui <- fluidPage( 
-  pageWithSidebar(
-    headerPanel("Continous random variables"),
-    sidebarPanel(
-      selectInput("conmodel","Select Model",
-                  choices = c("Normal" = "normal",
-                              "Exponential" = "exponential",
-                              "Uniform" = "uniform"),
-      ),
-      sliderInput("s","number of simulated data", min=1,max=1000,value=10),
-      
-      conditionalPanel(
-        condition = "input.conmodel == 'exponential'",
-        numericInput("lam","Parameter lambda in exponential", value = 1)
-      ),
-      
-      
-      
-      conditionalPanel(
-        condition = "input.conmodel == 'normal'",
-        numericInput("mu","Parameter mu in normal",value = 0),
-        numericInput("sigma","parameter sigma in normal", value = 1)
-      ),
-      
-      numericInput("i","support", value = 2),
-      
-      conditionalPanel(
-        condition = "input.connmodel == 'normal'",
-        numericInput("j1","j in normal", value = 0)
-      ),
-      
-      
-      conditionalPanel(     
-        condition = "input.conmodel == 'exponential'",
-        numericInput("j2", "j in exponential" , value = 0)
-      ), 
-      
-      
-      
-      conditionalPanel( 
-        
-        condition = "input.conmodel == 'uniform'", 
-        
-        numericInput("a", "parameter a in Normal" , value = -2),  
-        
-        numericInput("b", "parameter b in Normal" , value = 0.8) 
-        
-      ) 
-      
+  headerPanel("Discrete Random Variables"),  
+  sidebarPanel( 
+    selectInput("dismodel", "Select Model", 
+                choices = c(
+                  "Bernoulli" = "bernoulli",
+                  "Binomial" = "binomial", 
+                  "Poisson" = "poisson", 
+                  "Geometric" = "geometric",
+                  "Hypergeometric" = "hypergeometric"), 
+                selected = "bernoulli" 
+    ), 
+    
+    conditionalPanel(
+      condition = "input.dismodel == 'bernoulli'",
+      # Slider input for the probability of successful trail
+      sliderInput("p", "Probability of successful trail(p)", min=0, max=1, step = 0.01, value = 0.5)
     ),
     
-    # mainPanel(  
+    conditionalPanel( 
+      condition = "input.dismodel == 'binomial'", 
+      numericInput("n", "parameter n in Binomial" , value = 10), 
+      numericInput("p", "parameter p in Binomial" , value = 0.5) 
+    ), 
     
-    #   plotOutput("graphout"),  
+    conditionalPanel(     
+      condition = "input.dismodel == 'poisson'", 
+      numericInput("lam", "parameter lambda in Poisson" , value = 1) 
+    ), 
     
-    #   tableOutput('tab'), 
+    conditionalPanel(     
+      condition = "input.dismodel == 'geometric'", 
+      numericInput("p", "parameter p in Geometric" , value = 0.5) 
+    ), 
     
-    #   tableOutput('prob')  
+    numericInput("max", "upper limit for x" , value = 5),  
+    sliderInput("s", "number of simulated data" ,min=1, max=1000, value = 10),  
     
-    #  ) 
+    conditionalPanel( 
+      condition = "input.dismodel == 'binomial'", 
+      numericInput("j1", "j for Bin" , value = 1) 
+    ), 
     
+    conditionalPanel( 
+      condition = "input.dismodel == 'poisson'", 
+      numericInput("j2", "j for Poisson" , value = 1) 
+    ), 
     
-    mainPanel(
-      tabsetPanel(type = "tabs",
-                  tabPanel("Graph",plotOutput("graphout")), #Plot
-                  tabPanel("Random Number",DT:dataTableOutput("tab")),# Table
-                  tabPanel("Random Number", verbatimTextOutput("prt")), #Print
-                  tabPanel("Prediction",tableOutput('prob')) #Print
-      )
+    conditionalPanel( 
+      condition = "input.dismodel == 'geometric'", 
+      numericInput("j3", "j for geometric" , value = 1) 
+    ),
+    
+    conditionalPanel(
+      condition = "input.dismodel == 'hypergeometric'",
+      numericInput("m", "M" , value = 10),
+      numericInput("n", "N" , value = 20),
+      numericInput("k", "K" , value = 5)
     )
-    
+  ),  
+  
+  mainPanel(  
+    plotOutput("histogram"),  
+    # tableOutput('tab')  
   )
 )
 
 
 server <-  function(input, output){
-  output$graphout <- renderPlot({
+  output$histogram <- renderPlot({ 
     
-    #normal
-    if(input$connModel == 'normal'){
-      par(mfrow = c(1,2))
-      x = seq(-input$i,input$i,0.01)
-      plot(x,dnorm(x,input$mu,input$sigma),type='I',col='red')
-    }
+    # binomial  
+    if (input$dismodel == 'binomial') { 
+      par(mfrow=c(1,2))  
+      d <- density(rbinom(1000,input$n,input$p))  
+      plot(d, main="Kernel Density of generated data")  
+      polygon(d, col="red", border="blue") 
+      x=0:input$n  
+      plot(x,dbinom(x,input$n,input$p))  
+    } 
     
-    #exponential
-    if(input$connmodel == 'exponential'){
-      #exponential
+    # poisson 
+    if (input$dismodel == 'poisson') { 
+      par(mfrow=c(1,2))   
+      D=rpois(input$s, input$lam)  
+      tab=table(D)  
+      barplot(tab,col='blue')  
+      x1=0:input$max  
+      y1=dpois(x1,input$lam)  
+      plot(x1,y1,type='b')  
+    } 
+    
+    # geometric  
+    if (input$dismodel == 'geometric') { 
       par(mfrow=c(1,2)) 
-      
-      x=seq(0,input$i,0.01)  
-      
-      plot(x,dexp(x,input$lam),type='l',col='green') 
+      D=rgeom(input$s, input$p)  
+      tab=table(D)  
+      barplot(tab,col='blue')  
+      x2=0:input$max  
+      y2=dgeom(x2,input$p)  
+      plot(x2,y2,type='b')  
+    } 
+    
+    # bernoulli      
+    if (input$dismodel == 'bernoulli') { 
+      par(mfrow=c(1,2))
+      Density <- density(rbinom(input$s,1,input$p))
+      plot(Density, main="Kernel Density of generated data")
+      polygon(Density, col="red", border="blue")
+      x=0:1
+      plot(x,dbinom(x,1,input$p))
     }
     
-    if (input$conmodel == 'uniform') { 
-      
-      a <- input$a 
-      
-      b <- input$b 
-      
-      n1 <- input$s 
-      
-      
-      
-      rand.unif <- runif(n1, min = a, max = b) 
-      
-      
-      
-      hist(rand.unif,  
-           
-           freq = FALSE,  
-           
-           xlab = 'x',   
-           
-           ylim = c(0, 0.4), 
-           
-           xlim = c(-3,3), 
-           
-           density = 20, 
-           
-           main = "Uniform distribution") 
-      
-      
-      
-      
-      
-      curve(dunif(x, min = a, max = b),  
-            
-            from = -3, to = 3,  
-            
-            n = n1,  
-            
-            col = "darkblue",  
-            
-            lwd = 2,  
-            
-            add = TRUE,  
-            
-            yaxt = "n", 
-            
-            ylab = 'probability') 
-      
-      
-      
-      
-      
-    } 
-    
-    
-    
+    # hypergeometric
+    if (input$dismodel == 'hypergeometric') { 
+      par(mfrow=c(1,2))
+      D=rhyper(nn=input$s, m=input$m, n=input$n, k=rep(input$k, input$s))
+      tab=table(D)
+      barplot(tab,col='blue')
+      x2=0:input$s
+      y2=dhyper(x2, m=input$m, n=input$n, k=input$k, log=FALSE)
+      plot(x2,y2,type='b')
+    }
   }) 
-  
-  
-  
-  output$prt <- renderPrint({  
-    
-    Normal=rnorm(input$s,input$mu, input$sigma)  
-    
-    Exp=rexp(input$s,input$lam)  
-    
-    
-    
-    if (input$conmodel == 'exponential') { 
-      
-      print(Exp) 
-      
-      
-      
-    } 
-    
-    else 
-      
-    { 
-      
-      print(Normal) 
-      
-    } 
-    
-    
-    
-  }) 
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  output$tab <- DT::renderDataTable({  
-    
-    Normal=rnorm(input$s,input$mu, input$sigma)  
-    
-    Exp=rexp(input$s,input$lam)  
-    
-    
-    
-    if (input$conmodel == 'exponential') { 
-      
-      DT::datatable(data.frame(Exp), options = list(lengthChange = TRUE)) 
-      
-      
-      
-    } 
-    
-    else 
-      
-    { 
-      
-      DT::datatable(data.frame(Normal), options = list(lengthChange = TRUE)) 
-      
-    } 
-    
-    
-    
-    
-    
-    
-    
-  })  
-  
-  
-  
-  output$prob <- renderPrint({  
-    
-    p1=pnorm(input$j1,input$mu, input$sigma)  
-    
-    p2=pexp(input$j2,input$lam)  
-    
-    
-    
-    if (input$conmodel == 'exponential') { 
-      
-      print(p2)  
-      
-    } 
-    
-    
-    
-    if (input$conmodel == 'normal') { 
-      
-      print(p1)  
-      
-    } 
-    
-    
-    
-    
-    
-  })
 }
 
 shinyApp(ui, server)
