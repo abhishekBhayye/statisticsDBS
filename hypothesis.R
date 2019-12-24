@@ -1,5 +1,6 @@
 library(shiny) 
-ui <-shinyUI(pageWithSidebar(
+
+ui <- pageWithSidebar(
   # title
   headerPanel("T-test for Two- and  -One variable "),
   
@@ -51,10 +52,10 @@ ui <-shinyUI(pageWithSidebar(
                )
              )
   )
-))
+)
 
 
-server<-shinyServer(function(input, output, session) {
+server<- function(input, output, session) {
   
   
   observeEvent(input$do, {   
@@ -118,7 +119,7 @@ server<-shinyServer(function(input, output, session) {
       
     })
   })
-})
+}
 
 
 
