@@ -253,12 +253,14 @@ dashboardPage(
           headerPanel(""),
           
           sidebarPanel(
+            
             #Selector for file upload
             fileInput('datafile', 'Choose CSV file',
                       accept=c('text/csv', 'text/comma-separated-values,text/plain')),
             #These column selectors are dynamically created when the file is loaded
             #uiOutput("Independent"),
             #uiOutput("Dependent"),
+            helpText("In case of Continuous target var choose atleast 2 independent variables"),
             selectInput("columns",label="Please select independent variables",multiple=TRUE,choices =""),
             selectInput("columns2",label="Please select dependent variable",choices =""),
             selectInput("Distribution","Please select distribution type",
@@ -267,11 +269,11 @@ dashboardPage(
           ),
           mainPanel(
             tabsetPanel(type = 'tab',
-              tabPanel("Selected cols",DT::dataTableOutput("selData")),
-              tabPanel("Actual vs Predicted",plotOutput("plot")),
-              tabPanel("Summary",DT::dataTableOutput("Summary")),
-              tabPanel("Measures",DT::dataTableOutput("Measures")),
-              tabPanel("Prediction",DT::dataTableOutput("Predictions")))
+                        tabPanel("Selected cols",DT::dataTableOutput("selData")),
+                        tabPanel("Actual vs Predicted",plotOutput("plot")),
+                        tabPanel("Summary",DT::dataTableOutput("Summary")),
+                        tabPanel("Measures",DT::dataTableOutput("Measures")),
+                        tabPanel("Prediction",DT::dataTableOutput("Predictions")))
           )
         )
       )
