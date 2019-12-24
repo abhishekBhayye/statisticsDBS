@@ -1,7 +1,7 @@
 library(shiny) 
 
 ui <- fluidPage( 
-  headerPanel("Discrete Random Variables"),  
+  #headerPanel("Discrete Random Variables"),  
   sidebarPanel( 
     selectInput("dismodel", "Select Model", 
                 choices = c(
@@ -62,7 +62,7 @@ ui <- fluidPage(
   ),  
   
   mainPanel(  
-    plotOutput("histogram"),  
+    plotOutput("histogram") 
     # tableOutput('tab')  
   )
 )
